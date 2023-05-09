@@ -1,46 +1,121 @@
-// Enemies our player must avoid
-var Enemy = function() {
-    // Variables applied to each of our instances go here,
-    // we've provided one for you to get started
+const gameLevel = document.createElement('div');
+gameLevel.textContent = 'Your level: 0';
+document.body.append(gameLevel);
 
-    // The image/sprite for our enemies, this uses
-    // a helper we've provided to easily load images
-    this.sprite = 'images/enemy-bug.png';
+// Coordinates
+const yStep = 85;
+const xStep = 100;
+const coordinates = {
+	defaultPlayerPositionX: 200,
+	defaultPlayerPositionY: 380,
+	winPosition: -10,
+	maxRight: 400,
+	maxLeft: 0,
+	maxDown: 380,
+	startEnemyPositionX: -90,
+	enemyPositionDiffY: 20,
+}
+
+// Enemies
+const Enemy = function ({ speed, x, y }) {
+	this.sprite = 'images/enemy-bug.png'
+	this.x = x;
+	this.y = y;
+	this.speed = speed;
 };
 
-// Update the enemy's position, required method for game
-// Parameter: dt, a time delta between ticks
-Enemy.prototype.update = function(dt) {
-    // You should multiply any movement by the dt parameter
-    // which will ensure the game runs at the same speed for
-    // all computers.
+const allEnemies = [
+	new Enemy({ speed: 350, y: 230, x: -20 }),
+	new Enemy({ speed: 420, y: 145, x: -55 }),
+	new Enemy({ speed: 390, y: 60, x: -75 }),
+];
+
+Enemy.prototype.update = function (dt) {
+	this.x += this.speed * dt;
+	//Cross the boundaries of the board - move to start position (endless movement) 
+	if (this.x >= ctx.canvas.width) {
+		this.x = coordinates.startEnemyPositionX;
+	};
+	// Check end game; Check loose only for the same Y
+	if (player.y === (this.y - coordinates.enemyPositionDiffY)) {
+		if (player.x < this.x && (this.x - player.x) <= 50 || //back
+			player.x > this.x && (player.x - this.x) <= 50     //front
+		) {
+			alert('Game over!');
+			player.resetGame();
+		}
+	}
 };
 
-// Draw the enemy on the screen, required method for game
-Enemy.prototype.render = function() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+Enemy.prototype.render = function () {
+	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
-// Now write your own player class
-// This class requires an update(), render() and
-// a handleInput() method.
+// Player
+const Player = function () {
+	this.sprite = 'images/char-cat-girl.png';
+	this.level = 0;
+	this.x = coordinates.defaultPlayerPositionX;
+	this.y = coordinates.defaultPlayerPositionY;
+}
 
+const player = new Player();
 
-// Now instantiate your objects.
-// Place all enemy objects in an array called allEnemies
-// Place the player object in a variable called player
+Player.prototype.render = function () {
+	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+};
 
+Player.prototype.resetPosition = function () {
+	this.x = coordinates.defaultPlayerPositionX;
+	this.y = coordinates.defaultPlayerPositionY;
+}
 
+Player.prototype.update = function () {
+	if (this.y <= coordinates.winPosition) {
+		this.level += 1;
+		gameLevel.textContent = `Your level: ${this.level}`;
 
-// This listens for key presses and sends the keys to your
-// Player.handleInput() method. You don't need to modify this.
-document.addEventListener('keyup', function(e) {
-    var allowedKeys = {
-        37: 'left',
-        38: 'up',
-        39: 'right',
-        40: 'down'
-    };
+		this.resetPosition();
+	}
+}
 
-    player.handleInput(allowedKeys[e.keyCode]);
+Player.prototype.resetGame = function () {
+	this.level = 0;
+	gameLevel.textContent = `Your level: ${this.level}`;
+
+	this.resetPosition();
+}
+
+Player.prototype.handleInput = function (direction) {
+	switch (direction) {
+		case 'left':
+			if (this.x > coordinates.maxLeft) {
+				this.x -= xStep;
+			}
+			break;
+		case 'right':
+			if (this.x < coordinates.maxRight) {
+				this.x += xStep;
+			}
+			break;
+		case 'up':
+			this.y -= yStep;
+			break;
+		case 'down':
+			if (this.y < coordinates.maxDown) {
+				this.y += yStep;
+			}
+			break;
+	}
+};
+
+document.addEventListener('keyup', (e) => {
+	const allowedKeys = {
+		ArrowLeft: 'left',
+		ArrowUp: 'up',
+		ArrowRight: 'right',
+		ArrowDown: 'down'
+	};
+
+	player.handleInput(allowedKeys[e.code]);
 });
